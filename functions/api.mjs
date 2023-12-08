@@ -40,9 +40,9 @@ app.use((req, res, next) => {
 app.use(bodyParser.json());
 app.use(cors())
 
-app.use('/.netlify/functions/api/', authRoutes);
-app.use('/.netlify/functions/api/', userRoutes);
-app.use('/.netlify/functions/api/', router);
+app.use('/', authRoutes);
+app.use('/', userRoutes);
+app.use('/', router);
 
 // app.listen(port, () => {
 //   console.log(`Server running on port http://127.0.0.1:${port}`);
