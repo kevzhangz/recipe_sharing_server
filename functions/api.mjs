@@ -48,5 +48,5 @@ app.use('/.netlify/functions/api/', router);
 //   console.log(`Server running on port http://127.0.0.1:${port}`);
 // });
 
-module.exports = app;
-module.exports.handler = serverless(app);
+export default app
+export const handler = serverless(app);

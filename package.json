@@ -2,11 +2,11 @@
   "name": "recipe_sharing_app-server",
   "version": "1.0.0",
   "description": "",
-  "main": "./src/app.js",
+  "main": "./functions/api.mjs",
   "type": "module",
   "scripts": {
     "test": "npm run test",
-    "dev": "nodemon ./src/app.js"
+    "dev": "nodemon ./functions/api.mjs"
   },
   "keywords": [],
   "author": "Kevin",
