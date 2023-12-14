@@ -9,11 +9,11 @@ dotenv.config();
 const jwtsecret = process.env.JWTSECRET
 
 const signin = async (req, res, next) => {
-  let user = await User.findOne({'username': req.body.username})
+  let user = await User.findOne({'email': req.body.email})
 
   if(!user || !user.authenticate(req.body.password)){
     return res.status(401).json({
-      error: 'Username or password not match'
+      error: 'Email or password not match'
     })
   }
 
