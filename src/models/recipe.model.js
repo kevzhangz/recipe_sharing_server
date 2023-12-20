@@ -9,10 +9,11 @@ const RecipeSchema = new mongoose.Schema({
   posted_by: { type: mongoose.Schema.ObjectId, ref: 'User', required: true },
   rating: [
     {
-      user: { type: mongoose.Schema.ObjectId, ref: 'User', unique: true },
+      user: { type: mongoose.Schema.ObjectId, ref: 'User' },
       rating: { type: Number, required: true },
     },
   ],
+  category: { type: String, required: true},
   image: { data: Buffer, contentType: String},
 });
 
