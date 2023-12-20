@@ -12,7 +12,9 @@ const findAll = async (req, res) => {
   try {
     const limit = req.query.limit != null ? req.query.limit : 0;
 
-    const result = await Recipe.find({}, recipeProjections).limit(limit);
+    let result = (await Recipe.find({}, recipeProjections).limit(limit));
+
+    result = modifyResult(result);
 
     return res.status(200).json({result})
   } catch (err) {
@@ -31,6 +33,7 @@ const create = async (req, res) => {
         data: req.file.buffer,
         contentType: req.file.mimetype
       },
+      rating: [],
       ...req.body
     }
 
@@ -52,8 +55,10 @@ const create = async (req, res) => {
 
 const read = async (req, res) => {
   try {
-    const recipe = await Recipe.findOne({id: req.params.id}, recipeProjections)
-    return res.status(200).json(recipe)
+    let recipe = await Recipe.findOne({id: req.params.id}, recipeProjections);
+    recipe = modifyResult([recipe]);
+
+    return res.status(200).json(recipe[0])
   } catch (err) {
     return res.status(500).json({
       error: dbErrorHandler.getErrorMessage(err)
@@ -71,6 +76,26 @@ const recipeById = async (req, res, next, id) => {
       error: dbErrorHandler.getErrorMessage(err)
     })
   }
+}
+
+const modifyResult = (recipe) => {
+  let res = recipe.map(item => {
+    let base64Image = item.image.data.toString('base64');
+    var averageRating = 0;
+
+    if(item.rating.length > 0){
+      let totalRating = item.rating.reduce((sum, rating) => sum + rating.rating, 0);
+      averageRating = totalRating / item.rating.length;
+    }
+
+    return {
+      ...item._doc,
+      rating: averageRating,
+      image: `data:${item.image.contentType};base64,${base64Image}`
+    }
+  });
+
+  return res;
 }
 
 export default {
