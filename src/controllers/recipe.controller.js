@@ -29,6 +29,10 @@ const create = async (req, res) => {
       contentType: req.file.mimetype
     });
 
+    console.log(req);
+    console.log('recipe img')
+    console.log(recipeImg);
+
     let newRecipe = {
       recipe_id: generator.generateId(8),
       posted_by: req.auth,
@@ -44,6 +48,8 @@ const create = async (req, res) => {
     })
 
   } catch (err){
+    console.log('error details:')
+    console.log(err)
     return res.status(500).json({
       error: dbErrorHandler.getErrorMessage(err)
     })
