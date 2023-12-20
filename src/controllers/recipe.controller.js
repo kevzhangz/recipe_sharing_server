@@ -24,19 +24,13 @@ const findAll = async (req, res) => {
 
 const create = async (req, res) => {
   try {
-    const recipeImg = new Image({
-      data: req.file.buffer,
-      contentType: req.file.mimetype
-    });
-
-    console.log(req);
-    console.log('recipe img')
-    console.log(recipeImg);
-
     let newRecipe = {
       recipe_id: generator.generateId(8),
       posted_by: req.auth,
-      image: recipeImg,
+      image: {
+        data: req.file.buffer,
+        contentType: req.file.mimetype
+      },
       ...req.body
     }
 
