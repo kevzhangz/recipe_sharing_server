@@ -19,6 +19,7 @@ const UserSchema = new mongoose.Schema({
     required: "Password is required"
   },
   salt: String,
+  saved_recipe: [{ type: mongoose.Schema.ObjectId, ref: 'Recipe' }]
 })
 
 UserSchema

@@ -6,6 +6,7 @@ import mongoose from 'mongoose'
 // Routes
 import authRoutes from '../src/routes/auth.routes.js'
 import userRoutes from '../src/routes/user.routes.js'
+import recipeRoutes from '../src/routes/recipe.routes.js'
 
 // setup process.env
 import dotenv from 'dotenv'
@@ -42,6 +43,7 @@ app.use(cors())
 
 app.use('/', authRoutes);
 app.use('/', userRoutes);
+app.use('/', recipeRoutes);
 app.use('/', router);
 
 // app.listen(port, () => {
