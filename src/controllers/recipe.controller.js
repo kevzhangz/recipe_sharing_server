@@ -14,7 +14,7 @@ const findAll = async (req, res) => {
   try {
     const limit = req.query.limit != null ? req.query.limit : 0;
 
-    let result = (await Recipe.find({}, recipeProjections).populate('category posted_by', 'name -_id').limit(limit));
+    let result = (await Recipe.find({}, recipeProjections).populate('category posted_by', 'name -_id').sort({ _id: -1}).limit(limit));
 
     result = modifyResult(result);
 
@@ -133,7 +133,7 @@ const modifyResult = (recipe) => {
 
 const recipeByUser = async (req, res) => {
   try {
-    let userCreatedRecipe = await Recipe.find({posted_by: req.auth._id}, recipeProjections).populate('category posted_by', 'name -_id');
+    let userCreatedRecipe = await Recipe.find({posted_by: req.auth._id}, recipeProjections).sort({ _id: -1}).populate('category posted_by', 'name -_id');
     let userSavedRecipe = await User.findOne({_id: req.auth._id}).populate('saved_recipe');
 
     let recipe = {
