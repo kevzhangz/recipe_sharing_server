@@ -13,7 +13,7 @@ const RecipeSchema = new mongoose.Schema({
       rating: { type: Number, required: true },
     },
   ],
-  category: { type: String, required: true},
+  category: [{ type: mongoose.Schema.ObjectId, ref: 'Category'}],
   image: { data: Buffer, contentType: String},
 });
 

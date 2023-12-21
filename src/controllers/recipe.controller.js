@@ -2,6 +2,7 @@ import dbErrorHandler from '../helpers/dbErrorHandler.js'
 import generator from '../helpers/generator.js'
 import Recipe from '../models/recipe.model.js'
 import User from '../models/user.model.js'
+import Category from '../models/category.model.js'
 import extend from 'lodash/extend.js'
 
 const recipeProjections = {
@@ -13,7 +14,7 @@ const findAll = async (req, res) => {
   try {
     const limit = req.query.limit != null ? req.query.limit : 0;
 
-    let result = (await Recipe.find({}, recipeProjections).limit(limit));
+    let result = (await Recipe.find({}, recipeProjections).populate('category posted_by', 'name -_id').limit(limit));
 
     result = modifyResult(result);
 
@@ -27,7 +28,7 @@ const findAll = async (req, res) => {
 
 const create = async (req, res) => {
   try {
-    var buffer = Buffer.from(req.body.image, 'base64')
+    let buffer = Buffer.from(req.body.image, 'base64')
 
     let newRecipe = {
       ...req.body,
@@ -40,6 +41,24 @@ const create = async (req, res) => {
       rating: []
     }
 
+    const categories = req.body.category.split(',');
+    console.log(categories);
+    const categoryIds = await Promise.all(categories.map(async categoryName => {
+      // Check if the category already exists
+      let category = await Category.findOne({ name: categoryName });
+    
+      // If the category doesn't exist, create it
+      if (!category) {
+        category = await Category.create({ name: categoryName });
+      }
+    
+      return category._id;
+    }));
+
+    console.log(categoryIds);
+    
+    newRecipe.category = categoryIds;
+
     const recipe = new Recipe(newRecipe)
     await recipe.save()
 
@@ -48,8 +67,6 @@ const create = async (req, res) => {
     })
 
   } catch (err){
-    console.log('error details:')
-    console.log(err)
     return res.status(500).json({
       error: dbErrorHandler.getErrorMessage(err)
     })
@@ -58,8 +75,7 @@ const create = async (req, res) => {
 
 const read = async (req, res) => {
   try {
-    let recipe = await Recipe.findOne({id: req.params.id}, recipeProjections);
-    recipe = modifyResult([recipe]);
+    let recipe = modifyResult([req.recipe]);
 
     return res.status(200).json(recipe[0])
   } catch (err) {
@@ -71,7 +87,7 @@ const read = async (req, res) => {
 
 const recipeById = async (req, res, next, id) => {
   try {
-    const recipe = await Recipe.findOne({id})
+    const recipe = await Recipe.findOne({recipe_id: id}).populate('category posted_by', 'name -_id');
     req.recipe = recipe
     next()
   } catch (err) {
@@ -91,10 +107,24 @@ const modifyResult = (recipe) => {
       averageRating = totalRating / item.rating.length;
     }
 
+    let category = [];
+    if(item.category != null && item.category.length > 0){
+      category = item.category.map(i => i.name);
+    }
+
+    let rest;
+    if(recipe.length > 1){
+      // Exclude descriptions, ingredients, instructions, posted_by attribute
+      ({ descriptions, ingredients, instructions, posted_by, ...rest } = item._doc);
+    } else {
+      ({...rest} = item._doc);
+    }
+
     return {
-      ...item._doc,
+      ...rest,
       rating: averageRating,
-      image: base64Image
+      image: base64Image,
+      category
     }
   });
 
@@ -103,10 +133,8 @@ const modifyResult = (recipe) => {
 
 const recipeByUser = async (req, res) => {
   try {
-    let userCreatedRecipe = await Recipe.find({posted_by: req.auth._id}, recipeProjections);
+    let userCreatedRecipe = await Recipe.find({posted_by: req.auth._id}, recipeProjections).populate('category posted_by', 'name -_id');
     let userSavedRecipe = await User.findOne({_id: req.auth._id}).populate('saved_recipe');
-
-    console.log(userSavedRecipe);
 
     let recipe = {
       saved : modifyResult(userSavedRecipe.saved_recipe),
