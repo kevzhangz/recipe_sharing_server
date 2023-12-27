@@ -98,15 +98,21 @@ const recipeById = async (req, res, next, id) => {
 // Return recipe created by user and saved by user
 const recipeByUser = async (req, res) => {
   try {
-    let userCreatedRecipe = await Recipe.find({posted_by: req.auth._id}, recipeProjections).sort({ _id: -1}).populate('category posted_by', 'name -_id');
+    let userCreatedRecipe = await Recipe.find({posted_by: req.auth._id}, recipeProjections).sort({ _id: -1}).populate('category posted_by', 'name');
     let userSavedRecipe = await User.findOne({_id: req.auth._id}).populate({
       path: 'saved_recipe',
-      populate: {path: 'category posted_by', select: 'name -_id'}
+      populate: {path: 'category posted_by', select: 'name'}
     });
 
+    let saved = modifyResult(userSavedRecipe.saved_recipe);
+    saved = await addStatus(req.auth._id, saved);
+
+    let created = modifyResult(userCreatedRecipe);
+    created = await addStatus(req.auth._id, created);
+
     let recipe = {
-      saved : modifyResult(userSavedRecipe.saved_recipe),
-      created: modifyResult(userCreatedRecipe)
+      saved,
+      created
     };
 
     return res.status(200).json(recipe);
