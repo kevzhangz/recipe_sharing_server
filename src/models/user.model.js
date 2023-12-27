@@ -13,6 +13,7 @@ const UserSchema = new mongoose.Schema({
   email: {
     type: String,
     required: "Email is required",
+    unique: true,
   },
   hashed_password: {
     type: String,
@@ -36,10 +37,6 @@ UserSchema
 UserSchema.path('hashed_password').validate(function(v) {
   if (this._password && this._password.length < 6) {
     this.invalidate('password', 'Password must be at least 6 characters.')
-  }
-
-  if (!this._password) {
-    this.invalidate('password', 'Password is required')
   }
 }, null)
 

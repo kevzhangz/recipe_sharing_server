@@ -5,7 +5,7 @@ import recipeController from '../controllers/recipe.controller';
 const router = express.Router();
 
 router.route('/api/recipe')
-     .get(recipeController.findAll)
+     .get(authController.checkSignin, recipeController.findAll)
      .post(authController.checkSignin, recipeController.create)
 
 router.route('/api/recipe/user')
@@ -13,6 +13,12 @@ router.route('/api/recipe/user')
 
 router.route('/api/recipe/:recipe_id')
      .get(authController.checkSignin, recipeController.read)
+
+router.route('/api/recipe/:recipe_id/rate')
+     .post(authController.checkSignin, recipeController.rateRecipe)
+
+router.route('/api/recipe/:recipe_id/save')
+     .post(authController.checkSignin, recipeController.saveRecipe)
 
 router.param('recipe_id', recipeController.recipeById);
 

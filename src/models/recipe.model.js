@@ -9,6 +9,7 @@ const RecipeSchema = new mongoose.Schema({
   posted_by: { type: mongoose.Schema.ObjectId, ref: 'User', required: true },
   rating: [
     {
+      _id: false,
       user: { type: mongoose.Schema.ObjectId, ref: 'User' },
       rating: { type: Number, required: true },
     },

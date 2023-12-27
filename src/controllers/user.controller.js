@@ -17,9 +17,14 @@ const create = async (req, res) => {
       message: 'Successfully signed up'
     })
   } catch (err){
-    return res.status(500).json({
-      error: errorHandler.getErrorMessage(err)
-    })
+    let error;
+    if(err.code == 11000){
+      error = 'Email already exists';
+    } else {
+      error = errorHandler.getErrorMessage(err)
+    }
+
+    return res.status(500).json({error});
   }
 }
 

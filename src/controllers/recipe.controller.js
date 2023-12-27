@@ -6,7 +6,6 @@ import Category from '../models/category.model.js'
 import extend from 'lodash/extend.js'
 
 const recipeProjections = {
-  '_id': false,
   '__v': false
 }
 
@@ -14,9 +13,10 @@ const findAll = async (req, res) => {
   try {
     const limit = req.query.limit != null ? req.query.limit : 0;
 
-    let result = (await Recipe.find({}, recipeProjections).populate('category posted_by', 'name -_id').sort({ _id: -1}).limit(limit));
+    let result = (await Recipe.find({}, recipeProjections).populate('category posted_by', 'name').sort({ _id: -1}).limit(limit));
 
     result = modifyResult(result);
+    result = await addStatus(req.auth._id, result);
 
     return res.status(200).json({result})
   } catch (err) {
@@ -42,7 +42,7 @@ const create = async (req, res) => {
     }
 
     const categories = req.body.category.split(',');
-    console.log(categories);
+
     const categoryIds = await Promise.all(categories.map(async categoryName => {
       // Check if the category already exists
       let category = await Category.findOne({ name: categoryName });
@@ -55,8 +55,6 @@ const create = async (req, res) => {
       return category._id;
     }));
 
-    console.log(categoryIds);
-    
     newRecipe.category = categoryIds;
 
     const recipe = new Recipe(newRecipe)
@@ -97,6 +95,115 @@ const recipeById = async (req, res, next, id) => {
   }
 }
 
+// Return recipe created by user and saved by user
+const recipeByUser = async (req, res) => {
+  try {
+    let userCreatedRecipe = await Recipe.find({posted_by: req.auth._id}, recipeProjections).sort({ _id: -1}).populate('category posted_by', 'name -_id');
+    let userSavedRecipe = await User.findOne({_id: req.auth._id}).populate({
+      path: 'saved_recipe',
+      populate: {path: 'category posted_by', select: 'name -_id'}
+    });
+
+    let recipe = {
+      saved : modifyResult(userSavedRecipe.saved_recipe),
+      created: modifyResult(userCreatedRecipe)
+    };
+
+    return res.status(200).json(recipe);
+  } catch (err) {
+    return res.status(500).json({
+      error: dbErrorHandler.getErrorMessage(err)
+    })
+  }
+}
+
+// Rate recipe, if user already rate the recipe, update the rating
+const rateRecipe = async (req, res) => {
+  try {
+    const userId = req.auth._id;
+    let recipe = req.recipe;
+
+    const existRatingIndex = recipe.rating.findIndex(userRating => userRating.user.toString() === userId);
+
+    if(existRatingIndex != -1){
+      recipe.rating[existRatingIndex].rating = req.body.rating;
+    } else {
+      recipe.rating.push({user: userId, rating: req.body.rating});
+    }
+
+    const totalRatings = recipe.rating.length;
+    const totalRatingSum = recipe.rating.reduce((sum, userRating) => sum + userRating.rating, 0);
+    const newAverageRating = totalRatings > 0 ? totalRatingSum / totalRatings : 0;
+
+    await recipe.save();
+
+    return res.status(200).json({
+      messages: 'Recipe successfully rated',
+      rating: newAverageRating
+    });
+
+  } catch (err) {
+    return res.status(500).json({
+      error: dbErrorHandler.getErrorMessage(err)
+    })
+  }
+}
+
+// Save and unsave recipe
+const saveRecipe = async (req, res) => {
+  try {
+    const userId = req.auth._id;
+    let action;
+
+    let user = await User.findById(userId);
+    let recipe = req.recipe;
+
+    // Check if the recipe is already saved
+    const recipeIndex = user.saved_recipe.indexOf(recipe._id);
+
+
+    if (recipeIndex !== -1) {
+      // Recipe is already saved, so unsave it
+      user.saved_recipe.splice(recipeIndex, 1);
+      action = 'unsaved';
+    } else {
+      // Recipe is not saved, so save it
+      user.saved_recipe.push(recipe._id);
+      action = 'saved';
+    }
+
+    await user.save();
+    return res.status(200).json({ message: `Recipe ${action} successfully` });
+  } catch (err) {
+    return res.status(500).json({
+      error: dbErrorHandler.getErrorMessage(err)
+    })
+  }
+}
+
+// add isSaved and isCreated property to let client know if user has saved or created the recipe
+const addStatus = async (userId, recipes) => {
+  const user = await User.findById(userId);
+
+  // Create a Set of saved recipe IDs for efficient lookup
+  const savedRecipeIds = new Set(user.saved_recipe.map(savedRecipe => savedRecipe._id.toString()));
+  const createdRecipeIds = new Set(recipes.filter(recipe => {
+    return recipe.posted_by._id.equals(userId);
+  }).map(recipe => {
+    return recipe._id.toString()
+  }));
+
+  let recipesWithSaveStatus = recipes.map(recipe => ({
+    ...recipe,
+    posted_by: {name: recipe.posted_by.name},
+    isSaved: savedRecipeIds.has(recipe._id.toString()),
+    isCreated: createdRecipeIds.has(recipe._id.toString()),
+  }));
+
+  return recipesWithSaveStatus;
+}
+
+// Modify recipe data to make it easier to use on client side
 const modifyResult = (recipe) => {
   let res = recipe.map(item => {
     let base64Image = item.image.data.toString('base64');
@@ -131,28 +238,12 @@ const modifyResult = (recipe) => {
   return res;
 }
 
-const recipeByUser = async (req, res) => {
-  try {
-    let userCreatedRecipe = await Recipe.find({posted_by: req.auth._id}, recipeProjections).sort({ _id: -1}).populate('category posted_by', 'name -_id');
-    let userSavedRecipe = await User.findOne({_id: req.auth._id}).populate('saved_recipe');
-
-    let recipe = {
-      saved : modifyResult(userSavedRecipe.saved_recipe),
-      created: modifyResult(userCreatedRecipe)
-    };
-
-    return res.status(200).json(recipe);
-  } catch (err) {
-    return res.status(500).json({
-      error: dbErrorHandler.getErrorMessage(err)
-    })
-  }
-}
-
 export default {
   findAll,
   create,
   read,
   recipeById,
   recipeByUser,
+  rateRecipe,
+  saveRecipe,
 }
