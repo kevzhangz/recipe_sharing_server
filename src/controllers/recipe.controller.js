@@ -112,16 +112,16 @@ const modifyResult = (recipe) => {
       category = item.category.map(i => i.name);
     }
 
-    let rest;
-    if(recipe.length > 1){
-      // Exclude descriptions, ingredients, instructions, posted_by attribute
-      ({ descriptions, ingredients, instructions, posted_by, ...rest } = item._doc);
-    } else {
-      ({...rest} = item._doc);
-    }
+    // let rest;
+    // if(recipe.length > 1){
+    //   // Exclude descriptions, ingredients, instructions, posted_by attribute
+    //   ({ descriptions, ingredients, instructions, posted_by, ...rest } = item._doc);
+    // } else {
+    //   ({...rest} = item._doc);
+    // }
 
     return {
-      ...rest,
+      ...item._doc,
       rating: averageRating,
       image: base64Image,
       category
