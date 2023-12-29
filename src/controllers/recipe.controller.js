@@ -94,6 +94,21 @@ const update = async (req, res) => {
       req.body.image.contentType = 'img/jpeg';
     }
 
+    const categories = req.body.category.split(',');
+
+    const categoryIds = await Promise.all(categories.map(async categoryName => {
+      // Use findOneAndUpdate with upsert: true to find or create the category
+      const result = await Category.findOneAndUpdate(
+        { name: categoryName },
+        { $setOnInsert: { name: categoryName } }, // Set the name if creating a new category
+        { upsert: true, new: true, useFindAndModify: false }
+      );
+    
+      return result._id;
+    }));
+
+    req.body.category = categoryIds;
+
     recipe = extend(recipe, req.body)
     await recipe.save();
 
