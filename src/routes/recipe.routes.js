@@ -13,6 +13,8 @@ router.route('/api/recipe/user')
 
 router.route('/api/recipe/:recipe_id')
      .get(authController.checkSignin, recipeController.read)
+     .put(authController.checkSignin, recipeController.update)
+     .delete(authController.checkSignin, recipeController.destroy)
 
 router.route('/api/recipe/:recipe_id/rate')
      .post(authController.checkSignin, recipeController.rateRecipe)

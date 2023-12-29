@@ -83,9 +83,54 @@ const read = async (req, res) => {
   }
 }
 
+const update = async (req, res) => {
+  try {
+    let recipe = req.recipe
+
+    if(req.body.image){
+      let buffer = Buffer.from(req.body.image, 'base64')
+      req.body.image = {};
+      req.body.image.data = buffer;
+      req.body.image.contentType = 'img/jpeg';
+    }
+
+    recipe = extend(recipe, req.body)
+    await recipe.save();
+
+    return res.status(200).json({
+      messages : 'Recipe Successfully updated'
+    });
+  } catch (err) {
+    return res.status(500).json({
+      error: dbErrorHandler.getErrorMessage(err)
+    })
+  }
+}
+
+const destroy = async (req, res) => {
+  try {
+    const recipe = req.recipe;
+
+    await recipe.deleteOne();
+
+    return res.status(200).json({
+      messages: 'Recipe Successfully deleted'
+  })
+  } catch (err) {
+    return res.status(500).json({
+      error: dbErrorHandler.getErrorMessage(err)
+    })
+  }
+}
+
 const recipeById = async (req, res, next, id) => {
   try {
     const recipe = await Recipe.findOne({recipe_id: id}).populate('category posted_by', 'name -_id');
+
+    if(!recipe){
+      throw Error("Recipe not found");
+    }
+
     req.recipe = recipe
     next()
   } catch (err) {
@@ -248,6 +293,8 @@ export default {
   findAll,
   create,
   read,
+  update,
+  destroy,
   recipeById,
   recipeByUser,
   rateRecipe,

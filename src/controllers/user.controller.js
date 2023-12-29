@@ -38,15 +38,14 @@ const update = async (req, res) => {
   try {
     let user = req.profile
 
-    if(!user.authenticate(req.body.old_password)){
-      throw Error("Old password is wrong!")
+    if(req.body.profile){
+      let buffer = Buffer.from(req.body.profile, 'base64')
+      req.body.profile = {};
+      req.body.profile.data = buffer;
+      req.body.profile.contentType = 'img/jpeg';
     }
 
-    req.body.password = req.body.new_password
-    req.body.new_password = undefined
-
     user = extend(user, req.body)
-    user.updated = Date.now()
     await user.save()
     user.hashed_password = undefined
     user.salt = undefined
@@ -58,9 +57,9 @@ const update = async (req, res) => {
   }
 }
 
-const userById = async (req, res, next) => {
+const userByEmail = async (req, res, next) => {
   try {
-    const user = await User.findById(req.params.userid)
+    const user = await User.findOne({email: req.params.email})
     req.profile = user
     next()
   } catch (err) {
@@ -76,5 +75,5 @@ export default {
   create,
   read,
   update,
-  userById
+  userByEmail
 }
