@@ -27,7 +27,7 @@ const signin = async (req, res, next) => {
     expire: new Date() + 9999
   })
 
-  return res.json({
+  data = {
     token,
     user: {
       _id: user._id,
@@ -35,7 +35,15 @@ const signin = async (req, res, next) => {
       name: user.name,
       email: user.email,
     }
-  })
+  }
+
+  if(user.profile.data){
+    data.user.profile = user.profile.data.toString('base64');
+  } else {
+    data.user.profile = null;
+  }
+
+  return res.status(200).json(data)
 }
 
 const signout = async (req, res, next) => {
