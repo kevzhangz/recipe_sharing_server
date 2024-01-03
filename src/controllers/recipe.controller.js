@@ -13,7 +13,18 @@ const findAll = async (req, res) => {
   try {
     const limit = req.query.limit != null ? req.query.limit : 0;
 
-    let result = (await Recipe.find({}, recipeProjections).populate('category posted_by', 'name').sort({ _id: -1}).limit(limit));
+    let query = {};
+
+    if(req.query.search){
+      query.title = { $regex: req.query.search, $options: 'i' };
+    }
+
+    if(req.query.filter){
+      const category = await Category.find({ name: {$in: req.query.filter.split(',')} }).then(categories => categories.map(category => category._id));
+      query.category = { $in: category };
+    }
+
+    let result = await Recipe.find(query, recipeProjections).populate('category posted_by', 'name').sort({ _id: -1}).limit(limit);
 
     result = modifyResult(result);
     result = await addStatus(req.auth._id, result);
