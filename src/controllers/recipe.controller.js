@@ -216,7 +216,7 @@ const rateRecipe = async (req, res) => {
 
     return res.status(200).json({
       messages: 'Recipe successfully rated',
-      rating: newAverageRating
+      rating: +newAverageRating.toFixed(2)
     });
 
   } catch (err) {
@@ -306,7 +306,7 @@ const modifyResult = (recipe) => {
 
     return {
       ...item._doc,
-      rating: averageRating,
+      rating: +averageRating.toFixed(2),
       image: base64Image,
       category
     }
