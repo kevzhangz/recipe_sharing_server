@@ -11,6 +11,17 @@ const userProjections = {
 
 const create = async (req, res) => {
   const user = new User(req.body);
+
+  const emailValidationRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if(req.body.email){
+    const validEmail = emailValidationRegex.test(req.body.email);
+
+    if(!validEmail){
+      return res.status(500).json({error: "Email not valid"});
+    }
+  }
+
   try {
     await user.save()
     return res.status(200).json({
